@@ -19,8 +19,20 @@ namespace FleetGuard.Controllers
 
         [HttpPost]
         public async Task<ActionResult<Device>> RegisterDevice(
-            RegisterDeviceRequest request)
+    RegisterDeviceRequest request)
         {
+            bool serialNumberExists =
+                await _context.Devices.AnyAsync(device =>
+                    device.SerialNumber == request.SerialNumber);
+
+            if (serialNumberExists)
+            {
+                return Conflict(new
+                {
+                    message = "A device with this serial number already exists."
+                });
+            }
+
             Device device = new Device
             {
                 DeviceName = request.DeviceName,
