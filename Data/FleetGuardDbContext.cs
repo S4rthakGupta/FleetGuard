@@ -12,5 +12,7 @@ namespace FleetGuard.Data
         }
 
         public DbSet<Device> Devices { get; set; } = null!;
+        public DbSet<DiagnosticsLog> DiagnosticsLog { get; set; } = null!;
+        
     }
 }

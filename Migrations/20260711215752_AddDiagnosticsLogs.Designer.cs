@@ -3,6 +3,7 @@ using System;
 using FleetGuard.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FleetGuard.Migrations
 {
     [DbContext(typeof(FleetGuardDbContext))]
-    partial class FleetGuardDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260711215752_AddDiagnosticsLogs")]
+    partial class AddDiagnosticsLogs
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.0");
@@ -74,21 +77,23 @@ namespace FleetGuard.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("BatteryLevel")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime>("CheckedInAt")
-                        .HasColumnType("TEXT");
-
                     b.Property<Guid>("DeviceId")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("HealthMessage")
+                    b.Property<string>("Event")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("Status")
-                        .HasColumnType("INTEGER");
+                    b.Property<string>("LogLevel")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
