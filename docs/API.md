@@ -2,20 +2,15 @@
 
 ## Overview
 
-FleetGuard is a RESTful ASP.NET Core Web API used to manage enterprise devices.
+FleetGuard is a RESTful ASP.NET Core Web API built using **ASP.NET Core 10**, **Entity Framework Core**, and **SQLite**.
 
-Current implementation supports:
-
-- Registering a device
-- Retrieving all registered devices
-- Retrieving a device by its unique ID
-- Returning appropriate error responses when a device is not found
+The API manages enterprise devices by allowing administrators to register, retrieve, update, delete, and monitor devices through health check-ins while enforcing validation and data integrity.
 
 ---
 
 # Base URL
 
-During local development the API runs at:
+During local development
 
 ```text
 http://localhost:5172
@@ -23,184 +18,347 @@ http://localhost:5172
 
 ---
 
-# Endpoint 1 - Register Device
+# Device Model
+
+```json
+{
+    "id": "4ccc9e3c-2418-4dd8-a757-dfa38cb87096",
+    "deviceName": "Warehouse Scanner 101",
+    "serialNumber": "WH-1001",
+    "platform": 1,
+    "status": 1,
+    "operatingSystemVersion": "Android 15",
+    "batteryLevel": 98,
+    "isEncrypted": true,
+    "isScreenLockEnabled": true,
+    "isRootedOrJailbroken": false,
+    "ipAddress": "192.168.1.25",
+    "lastCheckInAt": "2026-07-11T21:20:17Z",
+    "healthMessage": "Healthy: Device passed all current checks."
+}
+```
+
+---
+
+# Endpoint 1 — Register Device
 
 Registers a new enterprise device.
 
-### URL
+## URL
 
 ```http
 POST /api/devices
 ```
 
-### Request Body
+### Request
 
 ```json
 {
-  "deviceName": "Warehouse Scanner 101",
-  "serialNumber": "WH-1001",
-  "platform": 1,
-  "operatingSystemVersion": "Android 15"
+    "deviceName": "Warehouse Scanner 101",
+    "serialNumber": "WH-1001",
+    "platform": 1,
+    "operatingSystemVersion": "Android 15"
 }
 ```
 
-### Success Response
+### Success
 
-**Status Code**
-
-```text
+```
 201 Created
 ```
 
-**Response**
+### Possible Responses
 
-```json
-{
-  "id": "d980372e-c026-4944-b3c5-67c4366e9e59",
-  "deviceName": "Warehouse Scanner 101",
-  "serialNumber": "WH-1001",
-  "platform": 1,
-  "status": 1,
-  "operatingSystemVersion": "Android 15"
-}
 ```
+400 Bad Request
+```
+
+```
+409 Conflict
+```
+
+### Example
+
+<img src="./images/post-device.jpeg" width="850"/>
 
 ---
 
-# Endpoint 2 - Get All Devices
+# Endpoint 2 — Retrieve All Devices
 
-Returns every registered device currently stored in memory.
+Returns every registered device.
 
-### URL
+## URL
 
 ```http
 GET /api/devices
 ```
 
-### Success Response
+### Success
 
-**Status Code**
-
-```text
-200 OK
 ```
-
-**Response**
-
-```json
-[
-  {
-    "id": "d980372e-c026-4944-b3c5-67c4366e9e59",
-    "deviceName": "Warehouse Scanner 101",
-    "serialNumber": "WH-1001",
-    "platform": 1,
-    "status": 1,
-    "operatingSystemVersion": "Android 15"
-  }
-]
+200 OK
 ```
 
 ---
 
-# Endpoint 3 - Get Device By ID
+# Endpoint 3 — Retrieve Device By ID
 
-Returns a single device using its unique GUID.
+Returns a single registered device.
 
-### URL
+## URL
 
 ```http
 GET /api/devices/{id}
 ```
 
-### Example
+### Success
 
-```http
-GET /api/devices/d980372e-c026-4944-b3c5-67c4366e9e59
 ```
-
-### Success Response
-
-**Status Code**
-
-```text
 200 OK
 ```
 
-**Response**
+### Error
 
-```json
-{
-  "id": "d980372e-c026-4944-b3c5-67c4366e9e59",
-  "deviceName": "Warehouse Scanner 101",
-  "serialNumber": "WH-1001",
-  "platform": 1,
-  "status": 1,
-  "operatingSystemVersion": "Android 15"
-}
 ```
-
----
-
-# Endpoint 4 - Device Not Found
-
-If a valid GUID does not exist in the system, the API returns a 404 response.
-
-### Example
-
-```http
-GET /api/devices/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa
-```
-
-### Response
-
-**Status Code**
-
-```text
 404 Not Found
 ```
 
-**Response**
+### Example
+
+<img src="./images/invalid-device-id.jpeg" width="850"/>
+
+---
+
+# Endpoint 4 — Update Device
+
+Updates an existing device.
+
+## URL
+
+```http
+PUT /api/devices/{id}
+```
+
+### Request
 
 ```json
 {
-  "message": "Device not found."
+    "deviceName": "Updated Warehouse Scanner",
+    "serialNumber": "WH-1001",
+    "platform": 1,
+    "operatingSystemVersion": "Android 16",
+    "status": 2
 }
 ```
 
----
+### Success
 
-# HTTP Status Codes Used
-
-| Status Code | Description |
-|-------------|-------------|
-| 200 OK | Request completed successfully |
-| 201 Created | Resource was successfully created |
-| 404 Not Found | Requested device does not exist |
-
----
-
-# Current Implementation
-
-The application currently stores devices in an in-memory collection:
-
-```csharp
-private static readonly List<Device> Devices = new();
+```
+200 OK
 ```
 
-This means:
+### Possible Responses
 
-- Devices exist only while the application is running.
-- Restarting the API clears all stored devices.
-- No database persistence exists yet.
+```
+404 Not Found
+```
+
+```
+409 Conflict
+```
+
+### Example
+
+<img src="./images/updating-put.jpeg" width="850"/>
 
 ---
 
-# Next Steps
+# Endpoint 5 — Delete Device
 
-The next development phase will include:
+Deletes an existing device.
 
+## URL
+
+```http
+DELETE /api/devices/{id}
+```
+
+### Success
+
+```
+204 No Content
+```
+
+### Error
+
+```
+404 Not Found
+```
+
+---
+
+# Endpoint 6 — Device Health Check-In
+
+Allows a managed device to periodically report its current health and compliance information.
+
+## URL
+
+```http
+POST /api/devices/{id}/check-in
+```
+
+### Request
+
+```json
+{
+    "batteryLevel": 18,
+    "isEncrypted": false,
+    "isScreenLockEnabled": true,
+    "isRootedOrJailbroken": false,
+    "ipAddress": "192.168.1.25"
+}
+```
+
+The API evaluates the device and automatically assigns an overall health status.
+
+---
+
+## Healthy Device
+
+Conditions
+
+- Battery ≥ 20%
+- Storage encrypted
+- Screen lock enabled
+- Device not rooted
+
+Example
+
+<img src="./images/healthy-device-1.jpeg" width="850"/>
+
+---
+
+## Low Battery Warning
+
+Battery level below 20%.
+
+Example
+
+<img src="./images/low-battery-warning-2.jpeg" width="850"/>
+
+---
+
+## Screen Lock Warning
+
+Triggered when screen lock is disabled.
+
+Example
+
+<img src="./images/no-screenlock-warning-3.jpeg" width="850"/>
+
+---
+
+## Rooted/Jailbroken Device
+
+Marked as Critical.
+
+Example
+
+<img src="./images/rooted-device-critical-4.jpeg" width="850"/>
+
+---
+
+## Validation Example
+
+Missing required request values.
+
+Example
+
+<img src="./images/null-values-device-details.jpeg" width="850"/>
+
+---
+
+## Battery Validation Example
+
+Additional battery validation example.
+
+<img src="./images/validation-test-battery-5.jpeg" width="850"/>
+
+---
+
+# Validation Rules
+
+FleetGuard currently validates
+
+- Device Name is required
+- Serial Number is required
+- Platform is required
+- Operating System Version is required
+- Duplicate Serial Numbers are not allowed
+- Device IDs must exist before update/delete/check-in
+
+---
+
+# HTTP Status Codes
+
+| Status | Meaning |
+|---------|----------|
+|200 OK|Request completed successfully|
+|201 Created|Device created|
+|204 No Content|Device deleted|
+|400 Bad Request|Validation failed|
+|404 Not Found|Device not found|
+|409 Conflict|Duplicate serial number|
+
+---
+
+# Technologies Used
+
+- ASP.NET Core 10
+- C#
 - Entity Framework Core
-- SQLite Database
-- Repository Pattern
+- SQLite
+- LINQ
 - Dependency Injection
-- Azure Deployment
+- Postman
+- DBeaver
+- Git
+- GitHub
+
+---
+
+# Database
+
+FleetGuard stores all device information inside a SQLite database.
+
+Entity Framework Core automatically creates and updates the schema using migrations.
+
+Current tables
+
+- Devices
+- __EFMigrationsHistory
+
+---
+
+# Testing
+
+The API has been manually tested using
+
+- Postman
+- DBeaver
+- Entity Framework Core Migrations
+
+---
+
+# Future Enhancements
+
+- Service Layer
+- Repository Pattern
+- JWT Authentication
+- Role-Based Authorization
+- Logging
+- Global Exception Handling
+- Azure SQL
+- Azure App Service
+- React Dashboard
+- GitHub Actions CI/CD

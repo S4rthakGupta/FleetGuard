@@ -1,5 +1,7 @@
 ﻿namespace FleetGuard.Enums
 {
+
+    // This models the device's lifecycle or the health state.
     public enum DeviceStatus
     {
         Pending = 1,

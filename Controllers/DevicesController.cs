@@ -1,4 +1,5 @@
 ﻿using FleetGuard.Data;
+using FleetGuard.Enums;
 using FleetGuard.Models;
 using FleetGuard.Requests;
 using Microsoft.AspNetCore.Mvc;
@@ -137,6 +138,67 @@ namespace FleetGuard.Controllers
             await _context.SaveChangesAsync();
 
             return NoContent();
+        }
+
+        [HttpPost("{id:guid}/check-in")]
+        public async Task<ActionResult<Device>> CheckInDevice(
+            Guid id,
+            DeviceCheckInRequest request)
+        {
+            Device? device =
+                await _context.Devices.FindAsync(id);
+
+            if (device is null)
+            {
+                return NotFound(new
+                {
+                    message = "Device not found."
+                });
+            }
+
+            device.BatteryLevel = request.BatteryLevel;
+            device.IsEncrypted = request.IsEncrypted;
+            device.IsScreenLockEnabled =
+                request.IsScreenLockEnabled;
+            device.IsRootedOrJailbroken =
+                request.IsRootedOrJailbroken;
+            device.IpAddress = request.IpAddress;
+            device.LastCheckInAt = DateTime.UtcNow;
+
+            if (request.IsRootedOrJailbroken)
+            {
+                device.Status = DeviceStatus.Critical;
+                device.HealthMessage =
+                    "Critical: Device is rooted or jailbroken.";
+            }
+            else if (!request.IsEncrypted)
+            {
+                device.Status = DeviceStatus.Critical;
+                device.HealthMessage =
+                    "Critical: Device storage is not encrypted.";
+            }
+            else if (!request.IsScreenLockEnabled)
+            {
+                device.Status = DeviceStatus.Warning;
+                device.HealthMessage =
+                    "Warning: Screen lock is not enabled.";
+            }
+            else if (request.BatteryLevel < 20)
+            {
+                device.Status = DeviceStatus.Warning;
+                device.HealthMessage =
+                    "Warning: Battery level is below 20%.";
+            }
+            else
+            {
+                device.Status = DeviceStatus.Healthy;
+                device.HealthMessage =
+                    "Healthy: Device passed all current checks.";
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Ok(device);
         }
     }
 }

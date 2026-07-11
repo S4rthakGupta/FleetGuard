@@ -3,6 +3,7 @@ using FleetGuard.Enums;
 
 namespace FleetGuard.Requests
 {
+   // This one has all the fields - the client can update including the status as well.
     public class UpdateDeviceRequest
     {
         [Required]
