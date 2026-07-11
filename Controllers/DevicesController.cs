@@ -19,7 +19,7 @@ namespace FleetGuard.Controllers
 
         [HttpPost]
         public async Task<ActionResult<Device>> RegisterDevice(
-    RegisterDeviceRequest request)
+            RegisterDeviceRequest request)
         {
             bool serialNumberExists =
                 await _context.Devices.AnyAsync(device =>
@@ -75,6 +75,68 @@ namespace FleetGuard.Controllers
             }
 
             return Ok(device);
+        }
+
+        [HttpPut("{id:guid}")]
+        public async Task<ActionResult<Device>> UpdateDevice(
+            Guid id,
+            UpdateDeviceRequest request)
+        {
+            Device? device =
+                await _context.Devices.FindAsync(id);
+
+            if (device is null)
+            {
+                return NotFound(new
+                {
+                    message = "Device not found."
+                });
+            }
+
+            bool serialNumberExists =
+                await _context.Devices.AnyAsync(existingDevice =>
+                    existingDevice.SerialNumber == request.SerialNumber &&
+                    existingDevice.Id != id);
+
+            if (serialNumberExists)
+            {
+                return Conflict(new
+                {
+                    message = "Another device already uses this serial number."
+                });
+            }
+
+            device.DeviceName = request.DeviceName;
+            device.SerialNumber = request.SerialNumber;
+            device.Platform = request.Platform;
+            device.OperatingSystemVersion =
+                request.OperatingSystemVersion;
+            device.Status = request.Status;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(device);
+        }
+
+        [HttpDelete("{id:guid}")]
+        public async Task<IActionResult> DeleteDevice(Guid id)
+        {
+            Device? device =
+                await _context.Devices.FindAsync(id);
+
+            if (device is null)
+            {
+                return NotFound(new
+                {
+                    message = "Device not found."
+                });
+            }
+
+            _context.Devices.Remove(device);
+
+            await _context.SaveChangesAsync();
+
+            return NoContent();
         }
     }
 }

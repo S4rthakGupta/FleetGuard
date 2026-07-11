@@ -1,52 +1,68 @@
-# FleetGuard Architecture
+﻿# FleetGuard Architecture
 
 ## Overview
 
 FleetGuard is a RESTful ASP.NET Core Web API designed to manage enterprise devices such as Android, iOS, Windows, Linux, printers, and IoT devices.
 
-The current implementation demonstrates a production-style backend architecture using ASP.NET Core while following common software engineering practices such as feature branching, pull requests, REST API design, and layered project organization.
+The application follows a layered architecture using ASP.NET Core, Entity Framework Core, and SQLite while following modern software engineering practices including Git feature branching, pull requests, code reviews, and documentation.
 
 ---
 
 # High-Level Architecture
 
 ```text
-                Client
-          (Postman / Future Frontend)
-                     │
-                     ▼
-          ASP.NET Core Web API
-                     │
-                     ▼
-           ASP.NET Core Routing
-                     │
-                     ▼
-           DevicesController
-                     │
-         ┌───────────┴───────────┐
-         ▼                       ▼
- RegisterDeviceRequest      Device Model
-         │                       │
-         └───────────┬───────────┘
-                     ▼
-          In-Memory List<Device>
-                     │
-                     ▼
-              JSON Response
+                 Client
+      (Postman / Future React UI)
+                    │
+                    ▼
+        ASP.NET Core Web API
+                    │
+                    ▼
+         ASP.NET Core Routing
+                    │
+                    ▼
+          DevicesController
+                    │
+                    ▼
+         FleetGuardDbContext
+                    │
+                    ▼
+      Entity Framework Core
+                    │
+                    ▼
+            SQLite Database
 ```
 
 ---
 
-# Current Request Flow
+# Request Lifecycle
 
-When a client sends a request to the API, the following steps occur:
+When a request reaches the API, the following sequence occurs.
 
-1. The client sends an HTTP request.
-2. ASP.NET Core matches the request URL with the appropriate controller.
-3. The controller receives the request model.
-4. A new Device object is created.
-5. The device is stored inside an in-memory collection.
-6. The API returns a JSON response with the appropriate HTTP status code.
+```text
+HTTP Request
+      │
+      ▼
+Routing
+      │
+      ▼
+DevicesController
+      │
+      ▼
+Model Validation
+      │
+      ▼
+Business Logic
+      │
+      ▼
+Entity Framework Core
+      │
+      ▼
+SQLite Database
+      │
+      ▼
+JSON Response
+```
 
 ---
 
@@ -58,20 +74,29 @@ FleetGuard
 ├── Controllers
 │     └── DevicesController.cs
 │
+├── Data
+│     └── FleetGuardDbContext.cs
+│
 ├── Models
 │     └── Device.cs
 │
 ├── Requests
-│     └── RegisterDeviceRequest.cs
+│     ├── RegisterDeviceRequest.cs
+│     └── UpdateDeviceRequest.cs
 │
 ├── Enums
 │     ├── DevicePlatform.cs
 │     └── DeviceStatus.cs
 │
+├── Migrations
+│     ├── InitialCreate.cs
+│     └── FleetGuardDbContextModelSnapshot.cs
+│
 ├── docs
 │     ├── API.md
 │     └── Architecture.md
 │
+├── fleetguard.db
 ├── Program.cs
 ├── appsettings.json
 └── FleetGuard.csproj
@@ -83,19 +108,35 @@ FleetGuard
 
 ## Controllers
 
-Responsible for handling incoming HTTP requests and returning HTTP responses.
+Responsible for handling HTTP requests and returning HTTP responses.
 
-Current controller:
+Current controller
 
 - DevicesController
 
 ---
 
+## Data
+
+Contains the application's database context.
+
+Current class
+
+- FleetGuardDbContext
+
+Responsibilities
+
+- Configures Entity Framework
+- Maps models to database tables
+- Manages database connections
+
+---
+
 ## Models
 
-Represents the application's business objects.
+Represents database entities.
 
-Current model:
+Current model
 
 - Device
 
@@ -103,56 +144,77 @@ Current model:
 
 ## Requests
 
-Contains DTOs (Data Transfer Objects) used to receive incoming API data.
+Contains Data Transfer Objects (DTOs) used to receive client requests.
 
-Current request model:
+Current DTOs
 
 - RegisterDeviceRequest
+- UpdateDeviceRequest
 
 ---
 
 ## Enums
 
-Contains predefined values used throughout the application.
+Stores strongly typed application constants.
 
-Current enums:
+Current enums
 
 - DevicePlatform
 - DeviceStatus
 
 ---
 
+## Migrations
+
+Contains Entity Framework Core migrations used to create and update the database schema.
+
+---
+
 ## docs
 
-Contains technical documentation for the project.
-
-Current documentation:
+Contains project documentation.
 
 - API.md
 - Architecture.md
 
 ---
 
-# Current Data Storage
+# Database Architecture
 
-The application currently stores devices inside an in-memory collection.
+FleetGuard uses SQLite together with Entity Framework Core.
 
-```csharp
-private static readonly List<Device> Devices = new();
+```text
+Device Model
+      │
+      ▼
+FleetGuardDbContext
+      │
+      ▼
+Entity Framework Core
+      │
+      ▼
+SQLite Database
 ```
 
-Advantages:
+Entity Framework automatically translates LINQ queries into SQL.
 
-- Fast
-- Simple
-- Great for learning
-- No database configuration required
+---
 
-Limitations:
+# Current Database
 
-- Data is lost when the application stops.
-- Data cannot be shared across multiple application instances.
-- Not suitable for production environments.
+Current Tables
+
+- Devices
+- __EFMigrationsHistory
+
+Each device stores
+
+- Id (GUID)
+- Device Name
+- Serial Number
+- Platform
+- Status
+- Operating System Version
 
 ---
 
@@ -160,106 +222,142 @@ Limitations:
 
 | Method | Endpoint | Description |
 |---------|----------|-------------|
-| POST | /api/devices | Register a new device |
+| POST | /api/devices | Register a device |
 | GET | /api/devices | Retrieve all devices |
-| GET | /api/devices/{id} | Retrieve a device by ID |
+| GET | /api/devices/{id} | Retrieve a device |
+| PUT | /api/devices/{id} | Update a device |
+| DELETE | /api/devices/{id} | Delete a device |
 
 ---
 
-# Current Technologies
+# Validation
 
-- ASP.NET Core Web API (.NET 10)
+Current validation includes
+
+- Required fields
+- Duplicate serial number prevention
+- Device existence checks
+- Automatic model validation using Data Annotations
+
+---
+
+# Technologies
+
+- ASP.NET Core 10
 - C#
+- Entity Framework Core
+- SQLite
 - Git
 - GitHub
 - Postman
+- DBeaver
 - Markdown Documentation
 
 ---
 
-# Planned Architecture
-
-The next implementation will replace the in-memory collection with a persistent database.
+# Current Development Workflow
 
 ```text
-                Client
-                    │
-                    ▼
-           DevicesController
-                    │
-                    ▼
-            Repository Layer
-                    │
-                    ▼
-        Entity Framework Core
-                    │
-                    ▼
-             SQLite Database
-```
-
-Eventually the application will be deployed to Azure.
-
-```text
-Client
-    │
-    ▼
-Azure App Service
-    │
-    ▼
-ASP.NET Core API
-    │
-    ▼
-Azure SQL Database
+Feature Branch
+       │
+       ▼
+Development
+       │
+       ▼
+Postman Testing
+       │
+       ▼
+Documentation
+       │
+       ▼
+Commit
+       │
+       ▼
+Push
+       │
+       ▼
+Pull Request
+       │
+       ▼
+Merge into Main
 ```
 
 ---
 
-# Future Improvements
+# Future Architecture
 
-The following features are planned for future development:
+As FleetGuard grows, the architecture will evolve into a more scalable layered design.
 
-- Entity Framework Core
-- SQLite Database
+```text
+                 React Frontend
+                        │
+                        ▼
+               ASP.NET Core API
+                        │
+                        ▼
+              Service Layer
+                        │
+                        ▼
+            Repository Layer
+                        │
+                        ▼
+         Entity Framework Core
+                        │
+                        ▼
+                Azure SQL Database
+```
+
+The application will eventually be deployed to Azure App Service.
+
+---
+
+# Planned Features
+
+- Service Layer
 - Repository Pattern
-- Dependency Injection
-- Device Update Endpoint
-- Device Delete Endpoint
-- Validation
-- Logging
-- Unit Testing
-- Azure Deployment
-- Authentication & Authorization
+- JWT Authentication
+- Role-Based Authorization
 - Device Health Monitoring
 - Device Compliance Tracking
+- Logging
+- Global Exception Handling
+- Unit Testing
+- Azure App Service Deployment
+- Azure SQL Migration
+- React Dashboard
+- CI/CD using GitHub Actions
 
 ---
 
 # Current Development Status
 
-Completed:
+## Completed
 
-- ASP.NET Core Web API setup
-- GitHub repository
-- Feature branch workflow
-- Pull request workflow
-- Device model
-- Request model
-- Enums
-- Device registration endpoint
-- Retrieve all devices endpoint
-- Retrieve device by ID endpoint
-- Error handling
-- API testing using Postman
-- API documentation
-- Architecture documentation
+- ASP.NET Core Web API
+- RESTful API Design
+- SQLite Database Integration
+- Entity Framework Core
+- Database Migrations
+- Device Registration
+- Retrieve All Devices
+- Retrieve Device by ID
+- Update Device
+- Delete Device
+- Request Validation
+- Duplicate Serial Number Validation
+- Feature Branch Workflow
+- Pull Request Workflow
+- Postman Testing
+- DBeaver Database Inspection
+- API Documentation
+- Architecture Documentation
 
-In Progress:
+---
 
-- Database integration using Entity Framework Core
+## Next Sprint
 
-Upcoming:
-
-- SQLite
+- Service Layer
 - Repository Pattern
-- Dependency Injection
+- Dependency Injection Improvements
+- Global Exception Handling
 - Azure Deployment
