@@ -9,6 +9,6 @@ namespace FleetGuard.Requests
 
         public DevicePlatform Platform { get; set; } = DevicePlatform.Other;
 
-        public string OperatingSystemVersion {  get; set; } = string.Empty;
+        public string OperatingSystemVersion { get; set; } = string.Empty;
     }
 }
