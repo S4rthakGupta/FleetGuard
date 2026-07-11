@@ -1,0 +1,6 @@
+@FleetGuard_HostAddress = http://localhost:5172
+
+GET {{FleetGuard_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
