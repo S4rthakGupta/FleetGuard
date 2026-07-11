@@ -1,6 +1,8 @@
-﻿using FleetGuard.Models;
+﻿using FleetGuard.Data;
+using FleetGuard.Models;
 using FleetGuard.Requests;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace FleetGuard.Controllers
 {
@@ -8,9 +10,16 @@ namespace FleetGuard.Controllers
     [Route("api/[controller]")]
     public class DevicesController : ControllerBase
     {
-        private static readonly List<Device> Devices = new();
+        private readonly FleetGuardDbContext _context;
+
+        public DevicesController(FleetGuardDbContext context)
+        {
+            _context = context;
+        }
+
         [HttpPost]
-        public ActionResult<Device> RegisterDevice(RegisterDeviceRequest request)
+        public async Task<ActionResult<Device>> RegisterDevice(
+            RegisterDeviceRequest request)
         {
             Device device = new Device
             {
@@ -20,25 +29,30 @@ namespace FleetGuard.Controllers
                 OperatingSystemVersion = request.OperatingSystemVersion
             };
 
-            Devices.Add(device);
+            _context.Devices.Add(device);
+
+            await _context.SaveChangesAsync();
 
             return CreatedAtAction(
                 nameof(GetDeviceById),
                 new { id = device.Id },
                 device);
         }
+
         [HttpGet]
-        public ActionResult<List<Device>> GetAllDevices()
+        public async Task<ActionResult<List<Device>>> GetAllDevices()
         {
-            return Ok(Devices);
+            List<Device> devices =
+                await _context.Devices.ToListAsync();
+
+            return Ok(devices);
         }
 
-
         [HttpGet("{id:guid}")]
-        public ActionResult<Device> GetDeviceById(Guid id)
+        public async Task<ActionResult<Device>> GetDeviceById(Guid id)
         {
-            Device? device = Devices.FirstOrDefault(
-                device => device.Id == id);
+            Device? device =
+                await _context.Devices.FindAsync(id);
 
             if (device is null)
             {
@@ -50,6 +64,5 @@ namespace FleetGuard.Controllers
 
             return Ok(device);
         }
-
     }
 }

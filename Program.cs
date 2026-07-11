@@ -1,22 +1,34 @@
+using FleetGuard.Data;
+using Microsoft.EntityFrameworkCore;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
 builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+
+string databasePath = Path.Combine(
+    builder.Environment.ContentRootPath,
+    "fleetguard.db");
+
+builder.Services.AddDbContext<FleetGuardDbContext>(options =>
+    options.UseSqlite($"Data Source={databasePath}"));
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+using (IServiceScope scope = app.Services.CreateScope())
+{
+    FleetGuardDbContext database =
+        scope.ServiceProvider.GetRequiredService<FleetGuardDbContext>();
+
+    database.Database.Migrate();
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
 
 app.UseHttpsRedirection();
-
-app.UseAuthorization();
 
 app.MapControllers();
 
