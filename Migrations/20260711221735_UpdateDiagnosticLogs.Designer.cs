@@ -3,6 +3,7 @@ using System;
 using FleetGuard.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FleetGuard.Migrations
 {
     [DbContext(typeof(FleetGuardDbContext))]
-    partial class FleetGuardDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260711221735_UpdateDiagnosticLogs")]
+    partial class UpdateDiagnosticLogs
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.0");

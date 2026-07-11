@@ -196,9 +196,43 @@ namespace FleetGuard.Controllers
                     "Healthy: Device passed all current checks.";
             }
 
+            DiagnosticsLog log = new DiagnosticsLog
+            {
+                DeviceId = device.Id,
+                BatteryLevel = request.BatteryLevel,
+                Status = device.Status,
+                HealthMessage = device.HealthMessage,
+                CheckedInAt = DateTime.UtcNow
+            };
+
+            _context.DiagnosticsLog.Add(log);
+
             await _context.SaveChangesAsync();
 
             return Ok(device);
+        }
+
+        [HttpGet("{id:guid}/diagnostics")]
+        public async Task<ActionResult<List<DiagnosticsLog>>> GetDiagnosticLogs(Guid id)
+        {
+            bool deviceExists =
+                await _context.Devices.AnyAsync(d => d.Id == id);
+
+            if (!deviceExists)
+            {
+                return NotFound(new
+                {
+                    message = "Device not found."
+                });
+            }
+
+            List<DiagnosticsLog> logs =
+                await _context.DiagnosticsLog
+                    .Where(log => log.DeviceId == id)
+                    .OrderByDescending(log => log.CheckedInAt)
+                    .ToListAsync();
+
+            return Ok(logs);
         }
     }
 }
