@@ -2,7 +2,7 @@
 {
     public enum DevicePlatform
     {
-        Android=1,
+        Android = 1,
         iOS = 2,
         Windows = 3,
         Linux = 4,
