@@ -6,6 +6,17 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("FleetGuardFrontend", policy =>
+    {
+        policy
+            .WithOrigins("http://localhost:3000")
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
+
 string databasePath = Path.Combine(
     builder.Environment.ContentRootPath,
     "fleetguard.db");
@@ -29,6 +40,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseCors("FleetGuardFrontend");
+
 app.MapControllers();
 
 app.Run();
