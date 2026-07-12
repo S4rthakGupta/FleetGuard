@@ -27,6 +27,16 @@ string connectionString =
     builder.Configuration.GetConnectionString("FleetGuardDatabase")
     ?? "Data Source=fleetguard.db";
 
+if (!builder.Environment.IsDevelopment())
+{
+    string azureDataDirectory = "/home/data";
+
+    Directory.CreateDirectory(azureDataDirectory);
+
+    connectionString =
+        $"Data Source={Path.Combine(azureDataDirectory, "fleetguard.db")}";
+}
+
 builder.Services.AddDbContext<FleetGuardDbContext>(options =>
     options.UseSqlite(connectionString));
 
