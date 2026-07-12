@@ -22,3 +22,26 @@ export type DiagnosticsLog = {
   healthMessage: string;
   checkedInAt: string;
 };
+
+export type RegisterDeviceRequest = {
+  deviceName: string;
+  serialNumber: string;
+  platform: number;
+  operatingSystemVersion: string;
+};
+
+export type UpdateDeviceRequest = {
+  deviceName: string;
+  serialNumber: string;
+  platform: number;
+  operatingSystemVersion: string;
+  status: number;
+};
+
+export type DeviceCheckInRequest = {
+  batteryLevel: number;
+  isEncrypted: boolean;
+  isScreenLockEnabled: boolean;
+  isRootedOrJailbroken: boolean;
+  ipAddress: string;
+};

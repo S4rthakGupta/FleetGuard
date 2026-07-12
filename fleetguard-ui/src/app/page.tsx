@@ -8,6 +8,7 @@ import {
   Laptop,
   LoaderCircle,
   RefreshCw,
+  Search,
   ShieldAlert,
   Smartphone,
   Trash2,
@@ -17,11 +18,12 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
+  checkInDevice,
   deleteDevice,
   getDevices,
   getDiagnostics,
 } from "../lib/api";
-import type { Device, DiagnosticsLog } from "@/src/types/device";
+import type { Device, DiagnosticsLog } from "../types/device";
 
 const STATUS = {
   Pending: 1,
@@ -77,6 +79,18 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [checkInOpen, setCheckInOpen] = useState(false);
+  const [checkInSubmitting, setCheckInSubmitting] = useState(false);
+
+  const [checkInForm, setCheckInForm] = useState({
+  batteryLevel: 80,
+  isEncrypted: true,
+  isScreenLockEnabled: true,
+  isRootedOrJailbroken: false,
+  ipAddress: "192.168.1.10",
+});
 
   const loadDevices = useCallback(async (showLoading = true) => {
     try {
@@ -161,6 +175,22 @@ export default function Home() {
     }),
     [devices],
   );
+
+  const filteredDevices = useMemo(() => {
+  const normalizedSearch = searchTerm.trim().toLowerCase();
+
+    return devices.filter((device) => {
+      const matchesSearch =
+        device.deviceName.toLowerCase().includes(normalizedSearch) ||
+        device.serialNumber.toLowerCase().includes(normalizedSearch);
+
+      const matchesStatus =
+        statusFilter === "all" ||
+        getStatusLabel(device.status).toLowerCase() === statusFilter;
+
+      return matchesSearch && matchesStatus;
+    });
+  }, [devices, searchTerm, statusFilter]);
 
   async function openDevice(device: Device) {
     try {
@@ -284,11 +314,37 @@ export default function Home() {
       <section className="content-grid">
         <article className="panel inventory-panel">
           <div className="panel-heading">
+            <div className="inventory-toolbar">
+              <label className="search-box">
+                <Search size={17} />
+
+                <input
+                  type="search"
+                  placeholder="Search by name or serial number"
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                />
+              </label>
+
+              <select
+                className="status-filter"
+                value={statusFilter}
+                onChange={(event) => setStatusFilter(event.target.value)}
+              >
+                <option value="all">All statuses</option>
+                <option value="pending">Pending</option>
+                <option value="healthy">Healthy</option>
+                <option value="warning">Warning</option>
+                <option value="critical">Critical</option>
+              </select>
+            </div>
             <div>
               <p className="eyebrow">Inventory</p>
               <h2>Managed Devices</h2>
             </div>
-            <span>{devices.length} enrolled</span>
+            <span>
+              {filteredDevices.length} of {devices.length} devices
+            </span>
           </div>
 
           {loading ? (
@@ -317,7 +373,7 @@ export default function Home() {
                 </thead>
 
                 <tbody>
-                  {devices.map((device) => (
+                  {filteredDevices.map((device) => (
                     <tr
                       key={device.id}
                       className={
@@ -377,11 +433,19 @@ export default function Home() {
             </div>
           ) : (
             <>
-              <div className="panel-heading">
-                <div>
-                  <p className="eyebrow">Device Details</p>
-                  <h2>{selectedDevice.deviceName}</h2>
-                </div>
+            <div className="panel-heading">
+              <div>
+                <p className="eyebrow">Device Details</p>
+                <h2>{selectedDevice.deviceName}</h2>
+              </div>
+
+              <div className="panel-actions">
+                <button
+                  className="primary-button"
+                  onClick={() => setCheckInOpen(true)}
+                >
+                  Run Check-In
+                </button>
 
                 <button
                   className="icon-button"
@@ -394,6 +458,7 @@ export default function Home() {
                   <X size={18} />
                 </button>
               </div>
+            </div>
 
               <div className="detail-status">
                 <StatusBadge status={selectedDevice.status} />
@@ -498,6 +563,163 @@ export default function Home() {
           )}
         </aside>
       </section>
+            {checkInOpen && selectedDevice && (
+        <div className="modal-backdrop">
+          <div 
+          className="modal-card"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="check-in-title"
+          >
+            <div className="modal-heading">
+              <div>
+                <p className="eyebrow">Device Action</p>
+                <h2 id="check-in-title">Run Check-In</h2>
+              </div>
+
+              <button
+                type="button"
+                className="icon-button"
+                onClick={() => setCheckInOpen(false)}
+                aria-label="Close check-in modal"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="form-grid">
+              <label>
+                Battery Level
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={checkInForm.batteryLevel}
+                  onChange={(event) =>
+                    setCheckInForm({
+                      ...checkInForm,
+                      batteryLevel: Number(event.target.value),
+                    })
+                  }
+                />
+              </label>
+
+              <label>
+                IP Address
+                <input
+                  value={checkInForm.ipAddress}
+                  onChange={(event) =>
+                    setCheckInForm({
+                      ...checkInForm,
+                      ipAddress: event.target.value,
+                    })
+                  }
+                />
+              </label>
+
+              <label className="checkbox-row">
+                <input
+                  type="checkbox"
+                  checked={checkInForm.isEncrypted}
+                  onChange={(event) =>
+                    setCheckInForm({
+                      ...checkInForm,
+                      isEncrypted: event.target.checked,
+                    })
+                  }
+                />
+                Storage Encrypted
+              </label>
+
+              <label className="checkbox-row">
+                <input
+                  type="checkbox"
+                  checked={checkInForm.isScreenLockEnabled}
+                  onChange={(event) =>
+                    setCheckInForm({
+                      ...checkInForm,
+                      isScreenLockEnabled: event.target.checked,
+                    })
+                  }
+                />
+                Screen Lock Enabled
+              </label>
+
+              <label className="checkbox-row">
+                <input
+                  type="checkbox"
+                  checked={checkInForm.isRootedOrJailbroken}
+                  onChange={(event) =>
+                    setCheckInForm({
+                      ...checkInForm,
+                      isRootedOrJailbroken: event.target.checked,
+                    })
+                  }
+                />
+                Rooted or Jailbroken
+              </label>
+            </div>
+
+            <div className="modal-actions">
+              <button
+                className="secondary-button"
+                onClick={() => setCheckInOpen(false)}
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                className="primary-button"
+                disabled={checkInSubmitting}
+                onClick={async () => {
+                  if (
+                    checkInForm.batteryLevel < 0 ||
+                    checkInForm.batteryLevel > 100
+                  ) {
+                    setError("Battery level must be between 0 and 100.");
+                    return;
+                  }
+
+                  if (!checkInForm.ipAddress.trim()) {
+                    setError("IP address is required.");
+                    return;
+                  }
+
+                  try {
+                    setCheckInSubmitting(true);
+                    setError(null);
+
+                    const updatedDevice = await checkInDevice(
+                      selectedDevice.id,
+                      checkInForm,
+                    );
+
+                    setSelectedDevice(updatedDevice);
+
+                    const history = await getDiagnostics(updatedDevice.id);
+                    setDiagnostics(history);
+
+                    await loadDevices(false);
+
+                    setCheckInOpen(false);
+                  } catch (requestError) {
+                    setError(
+                      requestError instanceof Error
+                        ? requestError.message
+                        : "Unable to check in device.",
+                    );
+                  } finally {
+                    setCheckInSubmitting(false);
+                  }
+                }}
+              >
+                {checkInSubmitting ? "Submitting..." : "Submit Check-In"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
