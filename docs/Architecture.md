@@ -1,79 +1,104 @@
-﻿# FleetGuard Architecture
+# FleetGuard Architecture
 
 ## Overview
 
-FleetGuard is a RESTful ASP.NET Core Web API that simulates an Enterprise Mobility Management (EMM) backend similar to products such as Microsoft Intune, VMware Workspace ONE, and SOTI MobiControl.
+FleetGuard is a full-stack Enterprise Mobility Management (EMM) application inspired by enterprise mobility solutions such as **SOTI MobiControl**, **Microsoft Intune**, and **VMware Workspace ONE**.
 
-The application manages enterprise devices by allowing administrators to register, update, retrieve, delete, and monitor device health through REST APIs.
+The project demonstrates how enterprise devices can be enrolled, monitored, managed, and evaluated for compliance through a RESTful ASP.NET Core API and a modern Next.js dashboard.
 
-FleetGuard is built using **ASP.NET Core 10**, **Entity Framework Core**, and **SQLite**, while following modern backend development practices such as dependency injection, feature branching, pull requests, migrations, and layered architecture.
+FleetGuard follows a layered architecture using **ASP.NET Core 10**, **Entity Framework Core**, **SQLite**, **Next.js**, **TypeScript**, **Azure App Service**, and **GitHub Actions CI/CD**.
 
 ---
 
-# System Architecture
+# Overall System Architecture
 
 ```text
-                        Client
-              (Postman / Future React UI)
-                         │
-                         ▼
-                 ASP.NET Core Web API
-                         │
-                         ▼
-                  ASP.NET Routing
-                         │
-                         ▼
-                DevicesController
-                         │
-                         ▼
-              Entity Framework Core
-                         │
-                         ▼
-               FleetGuardDbContext
-                         │
-                         ▼
+                 Next.js Dashboard
+                        │
+                 HTTP / JSON API
+                        │
+                        ▼
+              ASP.NET Core Web API
+                        │
+                        ▼
+               ASP.NET Routing
+                        │
+                        ▼
+              DevicesController
+                        │
+                        ▼
+          Entity Framework Core (ORM)
+                        │
+                        ▼
+             FleetGuardDbContext
+                        │
+                        ▼
                  SQLite Database
 ```
 
 ---
 
+# Cloud Architecture
+
+```text
+             GitHub Repository
+                    │
+            GitHub Actions CI/CD
+                    │
+                    ▼
+          Azure App Service
+                    │
+                    ▼
+          FleetGuard REST API
+                    │
+                    ▼
+             SQLite Database
+```
+
+The backend is deployed to Azure App Service while the frontend communicates with the deployed API using REST endpoints.
+
+---
+
 # Request Lifecycle
 
-Every request follows the same lifecycle.
+Every request follows the same flow.
 
 ```text
 HTTP Request
-      │
-      ▼
-Routing
-      │
-      ▼
+
+↓
+
+ASP.NET Routing
+
+↓
+
 DevicesController
-      │
-      ▼
-Model Validation
-      │
-      ▼
-Business Logic
-      │
-      ▼
+
+↓
+
+Request Validation
+
+↓
+
+Business Rules
+
+↓
+
 Entity Framework Core
-      │
-      ▼
+
+↓
+
 SQLite Database
-      │
-      ▼
+
+↓
+
 JSON Response
 ```
 
 Example
 
-```
+```text
 POST /api/devices
-
-↓
-
-DevicesController
 
 ↓
 
@@ -85,26 +110,66 @@ Check Duplicate Serial Number
 
 ↓
 
-Create Device Object
+Create Device
 
 ↓
 
-Save using Entity Framework
+Save Changes
 
 ↓
 
-SQLite Database
-
-↓
-
-201 Created
+Return 201 Created
 ```
+
+---
+
+# Device Check-In Lifecycle
+
+FleetGuard evaluates device compliance whenever a managed device performs a check-in.
+
+```text
+Device Check-In
+
+↓
+
+Receive Device Status
+
+↓
+
+Battery Evaluation
+
+↓
+
+Encryption Evaluation
+
+↓
+
+Screen Lock Evaluation
+
+↓
+
+Root Detection
+
+↓
+
+Generate Health Status
+
+↓
+
+Store Diagnostic Log
+
+↓
+
+Return Updated Device
+```
+
+Every check-in creates a historical diagnostic record that can later be viewed inside the dashboard.
 
 ---
 
 # Project Structure
 
-```
+```text
 FleetGuard
 │
 ├── Controllers
@@ -114,7 +179,8 @@ FleetGuard
 │     └── FleetGuardDbContext.cs
 │
 ├── Models
-│     └── Device.cs
+│     ├── Device.cs
+│     └── DiagnosticsLog.cs
 │
 ├── Requests
 │     ├── RegisterDeviceRequest.cs
@@ -126,15 +192,15 @@ FleetGuard
 │     └── DeviceStatus.cs
 │
 ├── Migrations
-│     ├── InitialCreate.cs
-│     └── FleetGuardDbContextModelSnapshot.cs
 │
 ├── docs
-│     ├── API.md
-│     ├── Architecture.md
-│     └── images
 │
-├── fleetguard.db
+├── fleetguard-ui
+│     ├── src
+│     ├── lib
+│     ├── types
+│     └── app
+│
 ├── Program.cs
 ├── appsettings.json
 └── FleetGuard.csproj
@@ -142,127 +208,75 @@ FleetGuard
 
 ---
 
-# Folder Responsibilities
+# Layer Responsibilities
 
 ## Controllers
 
-Responsible for receiving HTTP requests, executing business logic, interacting with the database, and returning HTTP responses.
+Responsible for exposing REST endpoints.
 
-Current Controller
+Current controller
 
 - DevicesController
 
 Responsibilities
 
-- Register Device
-- Retrieve Devices
-- Update Devices
-- Delete Devices
-- Device Health Check-In
+- Register devices
+- Retrieve devices
+- Update devices
+- Delete devices
+- Perform health check-ins
+- Retrieve diagnostic history
 
 ---
 
-## Data
+## Entity Framework Core
 
-Contains the application's database context.
+Responsible for
 
-Current Class
+- Mapping C# models
+- Translating LINQ queries
+- Executing SQL
+- Managing database migrations
 
-- FleetGuardDbContext
+---
+
+## Database
+
+FleetGuard currently uses SQLite.
+
+Current tables
+
+- Devices
+- DiagnosticsLogs
+- __EFMigrationsHistory
+
+---
+
+## Dashboard
+
+Built using
+
+- Next.js
+- React
+- TypeScript
 
 Responsibilities
 
-- Creates database connection
-- Maps models to tables
-- Executes LINQ queries
-- Handles database changes
-
----
-
-## Models
-
-Represents database entities.
-
-Current Model
-
-- Device
-
-Stores
-
-- Device Information
-- Platform
-- Status
-- Battery
-- Security Information
-- Health Information
-
----
-
-## Requests
-
-Contains Data Transfer Objects (DTOs).
-
-Current DTOs
-
-- RegisterDeviceRequest
-- UpdateDeviceRequest
-- DeviceCheckInRequest
-
-Purpose
-
-Incoming JSON is first converted into these objects before business logic is executed.
-
----
-
-## Enums
-
-Contains strongly typed constants.
-
-Current Enums
-
-- DevicePlatform
-- DeviceStatus
-
-Using enums prevents invalid values from being stored in the database.
-
----
-
-## Migrations
-
-Contains Entity Framework Core migrations.
-
-Responsibilities
-
-- Create database schema
-- Update schema
-- Version database changes
-
-Current Migration
-
-- InitialCreate
-
----
-
-## Documentation
-
-Contains technical project documentation.
-
-Current Files
-
-- API.md
-- Architecture.md
-
-Images
-
-- Postman request screenshots
-- Validation screenshots
-- Device health screenshots
+- Device inventory
+- Search
+- Status filtering
+- Device registration
+- Device editing
+- Device deletion
+- Device check-ins
+- Diagnostic timeline
+- Device details
 
 ---
 
 # Entity Relationship
 
-```
+```text
 Device
 │
 ├── Id
@@ -277,109 +291,128 @@ Device
 ├── IsRootedOrJailbroken
 ├── IpAddress
 ├── LastCheckInAt
-└── HealthMessage
+├── HealthMessage
+│
+└──────────────┐
+               │
+               │ 1
+               │
+               │
+               ▼
+         DiagnosticsLog
+               │
+               ├── Id
+               ├── DeviceId
+               ├── BatteryLevel
+               ├── Status
+               ├── HealthMessage
+               ├── CheckedInAt
+               ├── Encryption
+               ├── ScreenLock
+               ├── RootDetection
+               └── IP Address
 ```
+
+One device can have many diagnostic history records.
 
 ---
 
-# Database Architecture
+# Health Evaluation Rules
 
-FleetGuard uses Entity Framework Core as an Object Relational Mapper (ORM).
+FleetGuard automatically evaluates every device during check-in.
+
+Priority
 
 ```text
-Device Object
+Rooted Device
+      │
+      ▼
+Critical
 
 ↓
 
-DbContext
+Not Encrypted
 
 ↓
 
-Entity Framework Core
+Critical
 
 ↓
 
-SQL Query
+Screen Lock Disabled
 
 ↓
 
-SQLite Database
-```
-
-Entity Framework automatically converts C# LINQ queries into SQL.
-
-Example
-
-```csharp
-_context.Devices.ToListAsync();
-```
-
-becomes
-
-```sql
-SELECT * FROM Devices;
-```
-
-without writing SQL manually.
-
----
-
-# Current API Endpoints
-
-| Method | Endpoint | Purpose |
-|---------|----------|---------|
-|POST|/api/devices|Register Device|
-|GET|/api/devices|Retrieve All Devices|
-|GET|/api/devices/{id}|Retrieve Device|
-|PUT|/api/devices/{id}|Update Device|
-|DELETE|/api/devices/{id}|Delete Device|
-|POST|/api/devices/{id}/check-in|Device Health Check|
-
----
-
-# Device Health Workflow
-
-FleetGuard evaluates every device whenever it performs a health check.
-
-```
-Device Check-In
+Warning
 
 ↓
 
-Battery
+Battery <20%
 
 ↓
 
-Encryption
+Warning
 
 ↓
 
-Screen Lock
-
-↓
-
-Root Detection
-
-↓
-
-Health Evaluation
+Everything Passed
 
 ↓
 
 Healthy
-Warning
-Critical
 ```
 
-Health Rules
+---
 
-| Condition | Result |
-|------------|---------|
-|Battery <20%|Warning|
-|Screen Lock Disabled|Warning|
-|Not Encrypted|Critical|
-|Rooted/Jailbroken|Critical|
-|Everything OK|Healthy|
+# Current REST API
+
+| Method | Endpoint | Description |
+|---------|----------|-------------|
+|POST|/api/devices|Register Device|
+|GET|/api/devices|Retrieve Devices|
+|GET|/api/devices/{id}|Retrieve Device|
+|PUT|/api/devices/{id}|Update Device|
+|DELETE|/api/devices/{id}|Delete Device|
+|POST|/api/devices/{id}/check-in|Device Check-In|
+|GET|/api/devices/{id}/diagnostics|Diagnostic History|
+
+---
+
+# Current Features
+
+Backend
+
+- Device Registration
+- Device Retrieval
+- Device Update
+- Device Delete
+- Device Check-In
+- Duplicate Serial Validation
+- Automatic Health Evaluation
+- Diagnostic History
+- Entity Framework Core
+- SQLite
+- REST API
+
+Frontend
+
+- Enterprise Dashboard
+- Search
+- Status Filter
+- Device Details
+- Device Registration
+- Device Editing
+- Device Check-In
+- Device Deletion
+- Diagnostic Timeline
+- Responsive Layout
+
+Cloud
+
+- Azure App Service Deployment
+- GitHub Actions CI/CD
+- Production API
+- Environment Variables
 
 ---
 
@@ -389,40 +422,41 @@ Backend
 
 - ASP.NET Core 10
 - C#
-
-Database
-
-- SQLite
 - Entity Framework Core
+- SQLite
 
-Development Tools
+Frontend
+
+- Next.js
+- React
+- TypeScript
+- CSS
+- Lucide React
+
+Cloud
+
+- Azure App Service
+- GitHub Actions
+
+Development
 
 - Visual Studio
+- Visual Studio Code
 - Postman
 - DBeaver
-
-Version Control
-
 - Git
-- GitHub
-- Feature Branch Workflow
-- Pull Requests
-
-Documentation
-
-- Markdown
 - GitHub
 
 ---
 
 # Development Workflow
 
-```
+```text
 Create Feature Branch
 
 ↓
 
-Implement Feature
+Develop Feature
 
 ↓
 
@@ -430,7 +464,11 @@ Test Using Postman
 
 ↓
 
-Inspect Database
+Verify Database
+
+↓
+
+Update Dashboard
 
 ↓
 
@@ -438,11 +476,11 @@ Update Documentation
 
 ↓
 
-Commit Changes
+Commit
 
 ↓
 
-Push Branch
+Push
 
 ↓
 
@@ -455,89 +493,11 @@ Review
 ↓
 
 Merge into Main
+
+↓
+
+Automatic Azure Deployment
 ```
-
-This workflow was followed throughout FleetGuard development.
-
----
-
-# Current Features
-
-✅ Device Registration
-
-✅ Retrieve All Devices
-
-✅ Retrieve Device By ID
-
-✅ Update Device
-
-✅ Delete Device
-
-✅ Request Validation
-
-✅ Duplicate Serial Number Detection
-
-✅ SQLite Persistence
-
-✅ Entity Framework Core
-
-✅ Device Health Check-In
-
-✅ Device Health Evaluation
-
-✅ Postman Testing
-
-✅ DBeaver Verification
-
-✅ Documentation
-
----
-
-# Future Architecture
-
-As FleetGuard evolves, business logic will move into dedicated service classes.
-
-```text
-               React Dashboard
-                      │
-                      ▼
-             ASP.NET Core API
-                      │
-                      ▼
-              Service Layer
-                      │
-                      ▼
-            Repository Layer
-                      │
-                      ▼
-         Entity Framework Core
-                      │
-                      ▼
-               Azure SQL Database
-```
-
-The application will eventually be deployed to **Azure App Service**, replacing SQLite with **Azure SQL Database** for production use.
-
----
-
-# Planned Features
-
-- Service Layer
-- Repository Pattern
-- JWT Authentication
-- Role-Based Authorization
-- Global Exception Handling
-- Logging
-- Unit Testing
-- Swagger Documentation
-- Azure App Service Deployment
-- Azure SQL Migration
-- React Frontend Dashboard
-- GitHub Actions CI/CD Pipeline
-- Device Compliance Policies
-- Device Audit Logs
-- Device Location Tracking
-- Push Notification Support
 
 ---
 
@@ -545,31 +505,85 @@ The application will eventually be deployed to **Azure App Service**, replacing 
 
 ## Phase 1 — Backend Foundation ✅
 
-- ASP.NET Core Web API
-- REST API Design
+- REST API
 - Entity Framework Core
-- SQLite Integration
+- SQLite
 - CRUD Operations
 - Validation
-- Database Migrations
-- Documentation
+- Migrations
 
 ---
 
 ## Phase 2 — Enterprise Features ✅
 
-- Duplicate Serial Validation
-- Device Health Check-In
-- Compliance Evaluation
-- Device Status Monitoring
+- Device Health Evaluation
+- Compliance Rules
+- Diagnostic History
+- Duplicate Serial Detection
 
 ---
 
-## Phase 3 — Next Sprint
+## Phase 3 — Full Stack Dashboard ✅
+
+- Next.js Dashboard
+- Search
+- Filters
+- Registration
+- Editing
+- Check-In
+- Diagnostic Timeline
+
+---
+
+## Phase 4 — Cloud Deployment ✅
+
+- Azure App Service
+- GitHub Actions CI/CD
+- Production Deployment
+
+---
+
+# Planned Improvements
+
+To better reflect a production-grade Enterprise Mobility Management platform, the following enhancements are planned.
+
+Backend
 
 - Service Layer
 - Repository Pattern
-- Global Exception Handling
+- Global Exception Middleware
+- Serilog Logging
+- FluentValidation
+- Unit Testing
+- Integration Testing
+
+Security
+
 - JWT Authentication
-- Azure Deployment
-- React Dashboard
+- Role-Based Authorization
+- Refresh Tokens
+- API Rate Limiting
+
+Cloud
+
+- Azure SQL Database
+- Azure Key Vault
+- Azure Monitor
+- Azure Application Insights
+
+Frontend
+
+- Authentication
+- User Management
+- Compliance Dashboard
+- Device Location Map
+- Live Notifications
+- Dark Mode
+- Charts and Analytics
+
+DevOps
+
+- Docker
+- Azure Container Apps
+- Infrastructure as Code
+- Automated Testing Pipeline
