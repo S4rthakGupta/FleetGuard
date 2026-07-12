@@ -6,23 +6,29 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
+string[] allowedOrigins =
+    builder.Configuration
+        .GetSection("AllowedOrigins")
+        .Get<string[]>()
+    ?? ["http://localhost:3000"];
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("FleetGuardFrontend", policy =>
     {
         policy
-            .WithOrigins("http://localhost:3000")
+            .WithOrigins(allowedOrigins)
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
 });
 
-string databasePath = Path.Combine(
-    builder.Environment.ContentRootPath,
-    "fleetguard.db");
+string connectionString =
+    builder.Configuration.GetConnectionString("FleetGuardDatabase")
+    ?? "Data Source=fleetguard.db";
 
 builder.Services.AddDbContext<FleetGuardDbContext>(options =>
-    options.UseSqlite($"Data Source={databasePath}"));
+    options.UseSqlite(connectionString));
 
 var app = builder.Build();
 
@@ -44,5 +50,12 @@ app.UseHttpsRedirection();
 app.UseCors("FleetGuardFrontend");
 
 app.MapControllers();
+
+app.MapGet("/health", () => Results.Ok(new
+{
+    status = "healthy",
+    application = "FleetGuard API",
+    timestamp = DateTime.UtcNow
+}));
 
 app.Run();
