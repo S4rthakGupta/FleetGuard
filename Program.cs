@@ -27,9 +27,25 @@ string connectionString =
     builder.Configuration.GetConnectionString("FleetGuardDatabase")
     ?? "Data Source=fleetguard.db";
 
+if (!builder.Environment.IsDevelopment())
+{
+    string homeDirectory =
+        Environment.GetEnvironmentVariable("HOME")
+        ?? builder.Environment.ContentRootPath;
+
+    string dataDirectory =
+        Path.Combine(homeDirectory, "data");
+
+    Directory.CreateDirectory(dataDirectory);
+
+    string databasePath =
+        Path.Combine(dataDirectory, "fleetguard.db");
+
+    connectionString = $"Data Source={databasePath}";
+}
+
 builder.Services.AddDbContext<FleetGuardDbContext>(options =>
     options.UseSqlite(connectionString));
-
 var app = builder.Build();
 
 using (IServiceScope scope = app.Services.CreateScope())
