@@ -362,3 +362,9 @@ The API has been manually tested using
 - Azure App Service
 - React Dashboard
 - GitHub Actions CI/CD
+
+# Dashboard Integration
+
+The Next.js dashboard consumes the FleetGuard REST API and displays device health, status, and diagnostic history.
+
+![FleetGuard Diagnostic History](images/dashboard/device-logs-on-dashboard.jpeg)
