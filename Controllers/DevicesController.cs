@@ -22,9 +22,12 @@ namespace FleetGuard.Controllers
         public async Task<ActionResult<Device>> RegisterDevice(
             RegisterDeviceRequest request)
         {
+            string normalizedSerialNumber =
+                request.SerialNumber.Trim().ToUpperInvariant();
+
             bool serialNumberExists =
                 await _context.Devices.AnyAsync(device =>
-                    device.SerialNumber == request.SerialNumber);
+                    device.SerialNumber.ToUpper() == normalizedSerialNumber);
 
             if (serialNumberExists)
             {
@@ -36,10 +39,11 @@ namespace FleetGuard.Controllers
 
             Device device = new Device
             {
-                DeviceName = request.DeviceName,
-                SerialNumber = request.SerialNumber,
+                DeviceName = request.DeviceName.Trim(),
+                SerialNumber = normalizedSerialNumber,
                 Platform = request.Platform,
-                OperatingSystemVersion = request.OperatingSystemVersion
+                OperatingSystemVersion =
+                    request.OperatingSystemVersion.Trim()
             };
 
             _context.Devices.Add(device);
@@ -94,10 +98,14 @@ namespace FleetGuard.Controllers
                 });
             }
 
+            string normalizedSerialNumber =
+            request.SerialNumber.Trim().ToUpperInvariant();
+
             bool serialNumberExists =
                 await _context.Devices.AnyAsync(existingDevice =>
-                    existingDevice.SerialNumber == request.SerialNumber &&
-                    existingDevice.Id != id);
+                    existingDevice.Id != id &&
+                    existingDevice.SerialNumber.ToUpper() ==
+                        normalizedSerialNumber);
 
             if (serialNumberExists)
             {
@@ -107,11 +115,11 @@ namespace FleetGuard.Controllers
                 });
             }
 
-            device.DeviceName = request.DeviceName;
-            device.SerialNumber = request.SerialNumber;
+            device.DeviceName = request.DeviceName.Trim();
+            device.SerialNumber = normalizedSerialNumber;
             device.Platform = request.Platform;
             device.OperatingSystemVersion =
-                request.OperatingSystemVersion;
+                request.OperatingSystemVersion.Trim();
             device.Status = request.Status;
 
             await _context.SaveChangesAsync();
