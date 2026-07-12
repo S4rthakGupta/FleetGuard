@@ -29,17 +29,23 @@ string connectionString =
 
 if (!builder.Environment.IsDevelopment())
 {
-    string azureDataDirectory = "/home/data";
+    string homeDirectory =
+        Environment.GetEnvironmentVariable("HOME")
+        ?? builder.Environment.ContentRootPath;
 
-    Directory.CreateDirectory(azureDataDirectory);
+    string dataDirectory =
+        Path.Combine(homeDirectory, "data");
 
-    connectionString =
-        $"Data Source={Path.Combine(azureDataDirectory, "fleetguard.db")}";
+    Directory.CreateDirectory(dataDirectory);
+
+    string databasePath =
+        Path.Combine(dataDirectory, "fleetguard.db");
+
+    connectionString = $"Data Source={databasePath}";
 }
 
 builder.Services.AddDbContext<FleetGuardDbContext>(options =>
     options.UseSqlite(connectionString));
-
 var app = builder.Build();
 
 using (IServiceScope scope = app.Services.CreateScope())
