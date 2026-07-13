@@ -61,7 +61,13 @@ function supportsBattery(platform: number): boolean {
   return platform !== 5;
 }
 
-const EASTERN_TIME_ZONE = "America/New_York";
+const EST_OFFSET_MINUTES = -5 * 60;
+
+function getEasternStandardTimeDate(value: string): Date {
+  const utcDate = new Date(value);
+
+  return new Date(utcDate.getTime() + EST_OFFSET_MINUTES * 60_000);
+}
 
 const easternDateTimeFormatter = new Intl.DateTimeFormat("en-US", {
   year: "numeric",
@@ -69,14 +75,16 @@ const easternDateTimeFormatter = new Intl.DateTimeFormat("en-US", {
   day: "numeric",
   hour: "numeric",
   minute: "2-digit",
-  timeZone: EASTERN_TIME_ZONE,
-  timeZoneName: "short",
+  hour12: true,
+  timeZone: "UTC",
 });
 
 function formatDate(value: string | null): string {
   if (!value) return "Never";
 
-  return easternDateTimeFormatter.format(new Date(value));
+  return `${easternDateTimeFormatter.format(
+    getEasternStandardTimeDate(value),
+  )} EST`;
 }
 
 function StatusBadge({ status }: { status: number }) {
