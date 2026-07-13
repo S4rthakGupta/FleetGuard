@@ -61,13 +61,22 @@ function supportsBattery(platform: number): boolean {
   return platform !== 5;
 }
 
+const EASTERN_TIME_ZONE = "America/New_York";
+
+const easternDateTimeFormatter = new Intl.DateTimeFormat("en-US", {
+  year: "numeric",
+  month: "short",
+  day: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
+  timeZone: EASTERN_TIME_ZONE,
+  timeZoneName: "short",
+});
+
 function formatDate(value: string | null): string {
   if (!value) return "Never";
 
-  return new Intl.DateTimeFormat("en-CA", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
+  return easternDateTimeFormatter.format(new Date(value));
 }
 
 function StatusBadge({ status }: { status: number }) {
